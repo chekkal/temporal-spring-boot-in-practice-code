@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: kata-05-cascading-failure
+  temporal:
+    connection:
+      target: 127.0.0.1:7233
+    namespace: default
+server:
+  port: 8085

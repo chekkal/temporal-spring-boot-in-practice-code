@@ -1,0 +1,10 @@
+target/
+.test-logs/
+
+*.log
+*.tmp
+
+.DS_Store
+.idea/
+.vscode/
+
