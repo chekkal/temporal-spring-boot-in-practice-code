@@ -6,6 +6,8 @@ Runnable [Temporal](https://temporal.io) examples for Java teams: a reference or
 
 Everything here boots with one `docker compose up` and is verified end-to-end by [`test-all.sh`](#verify-everything-works--test-allsh) — clone it, run the script, and you have a working Temporal stack with a real saga executing against it in about three minutes.
 
+> **Evaluating Temporal?** Start with **[Use Cases](use-cases/)** — which pattern solves which production problem, and whether you need a workflow engine at all.
+
 ![Reference application architecture](docs/images/reference-app-architecture.png)
 
 ## Why this exists
@@ -35,6 +37,8 @@ Each kata's own `README.md` carries the challenge text and a solution outline at
 
 ```
 .
+├── use-cases/              ← Which pattern solves which problem (start here)
+│
 ├── order-platform/         ← Reference application
 │   ├── order-api/           # workflow + activity contracts, DTOs
 │   ├── order-service/       # Spring Boot app — impls, REST, TemporalConfig, tests
