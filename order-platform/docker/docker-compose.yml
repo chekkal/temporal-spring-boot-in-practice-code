@@ -6,7 +6,14 @@
 # Endpoints:
 #   - Temporal gRPC:  localhost:7233
 #   - Temporal UI:    http://localhost:8233
-#   - Postgres:       localhost:5432
+#
+# Postgres is deliberately NOT published to the host. Only the Temporal container
+# talks to it, over the Compose network at postgres-temporal:5432. Publishing it
+# as 5432:5432 makes `docker compose up` fail outright for anyone who already runs
+# Postgres locally, which is a lot of people. If you want to inspect the database,
+# either uncomment the mapping below (pick a free host port) or use:
+#
+#   docker exec -it order-platform-postgres psql -U temporal
 #
 # `name:` pins the Compose project so containers don't collide with other stacks
 # the user may be running (e.g. work projects whose compose files also sit in a
@@ -20,8 +27,8 @@ services:
   postgres-temporal:
     image: postgres:16-alpine
     container_name: order-platform-postgres
-    ports:
-      - "5432:5432"
+    # ports:
+    #   - "5433:5432"   # uncomment to inspect the DB from the host
     environment:
       POSTGRES_USER: temporal
       POSTGRES_PASSWORD: temporal

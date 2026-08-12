@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: agentic-coordination
+  temporal:
+    connection:
+      target: 127.0.0.1:7233
+    namespace: default
+
+server:
+  port: 8090
+
+agent:
+  simulated:
+    # Pretend inference latency per model call, in milliseconds.
+    latency-ms: 400
+    # Rate-limit the first N analyze() calls to watch the retry policy work.
+    # Leave at 0 for deterministic demo runs.
+    rate-limit-first-n: 0

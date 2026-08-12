@@ -7,8 +7,9 @@
 #   3. Wait for Temporal gRPC (7233) and UI (8233).
 #   4. Build + unit-test the order-platform reference app.
 #   5. Boot order-service, exercise happy-path + payment-decline paths via REST, kill.
-#   6. Build all 6 katas.
-#   7. Boot each kata in turn, verify it binds its port (= Spring context + Temporal
+#   6. Build + run the agentic-coordination use case end-to-end.
+#   7. Build all 6 katas.
+#   8. Boot each kata in turn, verify it binds its port (= Spring context + Temporal
 #      worker came up cleanly), kill. Workflow bodies are TODOs so we don't exercise
 #      business endpoints.
 #
@@ -86,6 +87,29 @@ ok "Java $JAVA_VER"
 
 docker info >/dev/null 2>&1 || xfail "Docker daemon not reachable"
 ok "Docker daemon reachable"
+
+# Application ports must be free before we start anything.
+#
+# Without this check the failure is baffling: an unrelated service already
+# listening on :8080 answers /actuator/health with "UP", the script accepts that
+# as "our app booted", and the first POST comes back 403 from somebody else's
+# application. Better to name the occupied port up front.
+check_port_free() {
+  local port=$1 what=$2
+  if nc -z localhost "$port" 2>/dev/null; then
+    xfail "port $port is already in use, but is needed for $what.
+     Stop whatever is listening there and re-run. To find it:  lsof -i:$port"
+  fi
+}
+
+check_port_free 8080 "order-service"
+check_port_free 8090 "use-cases/agentic-coordination"
+if [[ "$SKIP_KATAS" == false ]]; then
+  for p in 8081 8082 8083 8084 8085 8086; do
+    check_port_free "$p" "the kata on :$p"
+  done
+fi
+ok "Application ports are free"
 
 # -----------------------------------------------------------------------------
 header "Temporal infrastructure"
@@ -213,6 +237,65 @@ wait "$REF_PID" 2>/dev/null || true
 APP_PIDS=("${APP_PIDS[@]/$REF_PID}")
 
 # -----------------------------------------------------------------------------
+header "Use cases — agentic coordination"
+# -----------------------------------------------------------------------------
+# Runs before the katas section so --skip-katas does not skip it: this one has a
+# real workflow body, so unlike the katas it can be verified end-to-end.
+
+( cd "$SCRIPT_DIR/use-cases/agentic-coordination" && mvn -q -B install ) \
+  || xfail "agentic-coordination build failed"
+ok "mvn install — agentic-coordination (5 workflow tests, no server needed)"
+
+AGENT_JAR="$SCRIPT_DIR/use-cases/agentic-coordination/target/agentic-coordination-1.0.0-SNAPSHOT.jar"
+[[ -f "$AGENT_JAR" ]] || xfail "agentic-coordination: jar not built at $AGENT_JAR"
+
+java -jar "$AGENT_JAR" \
+    --spring.main.banner-mode=off \
+    --logging.level.root=WARN \
+  > "$LOG_DIR/agentic-coordination.log" 2>&1 &
+AGENT_PID=$!
+APP_PIDS+=("$AGENT_PID")
+
+elapsed=0
+while ! nc -z localhost 8090 2>/dev/null; do
+  sleep 2; elapsed=$((elapsed + 2))
+  if ! kill -0 "$AGENT_PID" 2>/dev/null; then
+    tail -30 "$LOG_DIR/agentic-coordination.log"
+    xfail "agentic-coordination crashed during startup (see log)"
+  fi
+  if [[ $elapsed -ge 90 ]]; then
+    tail -30 "$LOG_DIR/agentic-coordination.log"
+    xfail "agentic-coordination didn't bind :8090 within 90s"
+  fi
+done
+ok "agentic-coordination boots on :8090"
+
+# Drive a full agent run against the live Temporal server.
+AGENT_RUN_ID="verify-$$"
+curl -sf -X POST localhost:8090/api/agents \
+    -H 'Content-Type: application/json' \
+    -d "{\"runId\":\"$AGENT_RUN_ID\",\"goal\":\"verify durable agents\",\"budgetMinorUnits\":500}" \
+    >/dev/null \
+  || xfail "agentic-coordination: could not start an agent run"
+
+elapsed=0
+agent_phase=""
+while [[ "$agent_phase" != "COMPLETED" ]]; do
+  sleep 2; elapsed=$((elapsed + 2))
+  agent_phase=$(curl -sf "localhost:8090/api/agents/$AGENT_RUN_ID" \
+                | grep -o '"phase":"[^"]*"' | cut -d'"' -f4 || true)
+  if [[ $elapsed -ge 60 ]]; then
+    tail -30 "$LOG_DIR/agentic-coordination.log"
+    xfail "agent run did not complete within 60s (last phase: ${agent_phase:-unknown})"
+  fi
+done
+ok "agent run completed end-to-end — plan, 4 research steps, synthesis"
+
+kill "$AGENT_PID" 2>/dev/null || true
+wait "$AGENT_PID" 2>/dev/null || true
+APP_PIDS=("${APP_PIDS[@]/$AGENT_PID}")
+
+# -----------------------------------------------------------------------------
 if [[ "$SKIP_KATAS" == true ]]; then
   header "All checks passed (katas skipped)"
   info "Temporal UI: http://localhost:8233   |   Logs: $LOG_DIR"
@@ -277,6 +360,7 @@ echo
 info "Summary:"
 info "  - Temporal infra started"
 info "  - order-platform: build OK, unit tests OK, happy + decline workflows OK"
+info "  - use-cases/agentic-coordination: build, 5 tests, full agent run OK"
 info "  - katas: all 6 build, boot, and register their worker with Temporal"
 echo
 info "Temporal UI is at http://localhost:8233"

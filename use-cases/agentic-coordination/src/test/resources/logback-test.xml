@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Temporal's workers log poller lifecycle at INFO, which buries the test results
+  under a few hundred lines. Keep the SDK at WARN and let the workflow's own
+  logging through, so a test run reads as the agent's story rather than the
+  runtime's.
+-->
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{28} -- %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="io.temporal" level="WARN"/>
+    <logger name="com.example.agent" level="INFO"/>
+
+    <root level="WARN">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

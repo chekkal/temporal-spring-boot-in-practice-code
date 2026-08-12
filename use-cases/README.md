@@ -66,7 +66,8 @@ If you already know you want Temporal and just want to write some, skip to the [
 
 **Why Temporal.** Each model call is an activity, so its result is recorded in history. A restart replays from history rather than re-invoking the model: you resume at step seven and pay nothing to get there. Rate limits become a retry policy, and the human approval gate is the same `Workflow.await()` as use case 2.
 
-**Status:** in progress. Chapter 30 of the companion book covers the pattern; runnable code is being added here.
+**Code:** [`agentic-coordination/`](agentic-coordination/) — a research agent with a budget gate, runnable with **no API key** (the provider is simulated). Kill it mid-run and restart to watch it resume without re-billing.
+**Tests:** `mvn test` — five tests, no server and no Docker required.
 
 ---
 
