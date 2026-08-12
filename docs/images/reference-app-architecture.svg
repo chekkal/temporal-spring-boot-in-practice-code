@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <defs>
+    <style>
+      text { font-family: 'Segoe Print', 'Comic Sans MS', cursive; fill: #1B2A4A; }
+      .title { font-size: 20px; font-weight: bold; }
+      .label { font-size: 15px; }
+      .small { font-size: 13px; }
+      .accent-text { fill: #2BA4B4; }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" fill="#1B2A4A">
+      <path d="M0,0 L10,3.5 L0,7 z"/>
+    </marker>
+    <marker id="arrow-teal" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" fill="#2BA4B4">
+      <path d="M0,0 L10,3.5 L0,7 z"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="500" fill="#F5F0EB" rx="0" ry="0"/>
+
+  <!-- Title -->
+  <text x="400" y="32" text-anchor="middle" class="title">E-Commerce Reference Application</text>
+
+  <!-- User icon -->
+  <circle cx="68" cy="80" r="14" fill="none" stroke="#1B2A4A" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M46,120 Q48,100 68,102 Q88,100 90,120" fill="none" stroke="#1B2A4A" stroke-width="2.5" stroke-linecap="round"/>
+  <text x="68" y="140" text-anchor="middle" class="small">User</text>
+
+  <!-- API Gateway -->
+  <rect x="140" y="62" width="155" height="52" rx="12" ry="12" fill="#E8F4F6" stroke="#1B2A4A" stroke-width="2.5"/>
+  <text x="217" y="93" text-anchor="middle" class="label">REST API</text>
+  <text x="217" y="108" text-anchor="middle" class="small accent-text">Spring Boot</text>
+
+  <!-- Arrow: User to Gateway -->
+  <path d="M92,88 L136,88" fill="none" stroke="#1B2A4A" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow)"/>
+
+  <!-- Order Service (Temporal Workflow) -->
+  <rect x="350" y="52" width="170" height="68" rx="12" ry="12" fill="#E8F4F6" stroke="#2BA4B4" stroke-width="2.5"/>
+  <text x="435" y="80" text-anchor="middle" class="label">Order Service</text>
+  <text x="435" y="98" text-anchor="middle" class="small accent-text">Temporal Workflow</text>
+  <text x="435" y="113" text-anchor="middle" class="small">orchestrates all steps</text>
+
+  <!-- Arrow: Gateway to Order Service -->
+  <path d="M297,88 L346,88" fill="none" stroke="#1B2A4A" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow)"/>
+
+  <!-- Temporal Server (center) -->
+  <rect x="295" y="195" width="210" height="70" rx="12" ry="12" fill="#2BA4B4" stroke="#1B2A4A" stroke-width="2.5" opacity="0.9"/>
+  <text x="400" y="222" text-anchor="middle" class="label" fill="#FFFFFF" style="font-weight:bold;">Temporal Server</text>
+  <text x="400" y="242" text-anchor="middle" class="small" fill="#E8F4F6">task queues &amp; event history</text>
+
+  <!-- Arrow: Order Service to Temporal Server -->
+  <path d="M435,122 Q435,160 420,190" fill="none" stroke="#2BA4B4" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="6,4" marker-end="url(#arrow-teal)"/>
+
+  <!-- Arrow: Temporal Server dispatches label -->
+  <text x="545" y="225" text-anchor="start" class="small accent-text">dispatches</text>
+
+  <!-- Worker box (subtle) -->
+  <rect x="120" y="300" width="560" height="28" rx="8" ry="8" fill="#2BA4B4" stroke="none" opacity="0.12"/>
+  <text x="400" y="320" text-anchor="middle" class="small accent-text">Workers (Spring Boot Applications)</text>
+
+  <!-- Payment Service -->
+  <rect x="42" y="350" width="150" height="65" rx="12" ry="12" fill="#E8F4F6" stroke="#1B2A4A" stroke-width="2.5"/>
+  <text x="117" y="376" text-anchor="middle" class="label">Payment</text>
+  <text x="117" y="394" text-anchor="middle" class="small accent-text">Activity</text>
+  <text x="117" y="410" text-anchor="middle" class="small">charge card</text>
+
+  <!-- Inventory Service -->
+  <rect x="218" y="350" width="150" height="65" rx="12" ry="12" fill="#E8F4F6" stroke="#1B2A4A" stroke-width="2.5"/>
+  <text x="293" y="376" text-anchor="middle" class="label">Inventory</text>
+  <text x="293" y="394" text-anchor="middle" class="small accent-text">Activity</text>
+  <text x="293" y="410" text-anchor="middle" class="small">reserve stock</text>
+
+  <!-- Shipping Service -->
+  <rect x="394" y="350" width="150" height="65" rx="12" ry="12" fill="#E8F4F6" stroke="#1B2A4A" stroke-width="2.5"/>
+  <text x="469" y="376" text-anchor="middle" class="label">Shipping</text>
+  <text x="469" y="394" text-anchor="middle" class="small accent-text">Activity</text>
+  <text x="469" y="410" text-anchor="middle" class="small">create label</text>
+
+  <!-- Notification Service -->
+  <rect x="570" y="350" width="170" height="65" rx="12" ry="12" fill="#E8F4F6" stroke="#1B2A4A" stroke-width="2.5"/>
+  <text x="655" y="376" text-anchor="middle" class="label">Notification</text>
+  <text x="655" y="394" text-anchor="middle" class="small accent-text">Activity</text>
+  <text x="655" y="410" text-anchor="middle" class="small">email &amp; SMS</text>
+
+  <!-- Arrows: Temporal to Activities -->
+  <path d="M340,267 Q200,300 117,346" fill="none" stroke="#2BA4B4" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow-teal)"/>
+  <path d="M370,267 Q330,300 293,346" fill="none" stroke="#2BA4B4" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow-teal)"/>
+  <path d="M430,267 Q450,300 469,346" fill="none" stroke="#2BA4B4" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow-teal)"/>
+  <path d="M460,267 Q560,300 655,346" fill="none" stroke="#2BA4B4" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow-teal)"/>
+
+  <!-- Database -->
+  <ellipse cx="690" cy="138" rx="52" ry="14" fill="#E8F4F6" stroke="#1B2A4A" stroke-width="2.5"/>
+  <rect x="638" y="138" width="104" height="38" fill="#E8F4F6" stroke="none"/>
+  <path d="M638,138 L638,176" stroke="#1B2A4A" stroke-width="2.5"/>
+  <path d="M742,138 L742,176" stroke="#1B2A4A" stroke-width="2.5"/>
+  <ellipse cx="690" cy="176" rx="52" ry="14" fill="#E8F4F6" stroke="#1B2A4A" stroke-width="2.5"/>
+  <text x="690" y="163" text-anchor="middle" class="small">Database</text>
+
+  <!-- Arrow: Order Service to Database -->
+  <path d="M522,80 Q600,70 636,130" fill="none" stroke="#1B2A4A" stroke-width="2" stroke-linecap="round" stroke-dasharray="6,4" marker-end="url(#arrow)"/>
+
+  <!-- Message flow annotation -->
+  <text x="400" y="470" text-anchor="middle" class="small" fill="#1B2A4A" opacity="0.7">Arrows show message flow. Dashed lines = async communication via Temporal.</text>
+
+  <!-- Wobbly decorative line -->
+  <path d="M30,46 Q200,42 400,46 Q600,50 770,46" fill="none" stroke="#2BA4B4" stroke-width="1.5" opacity="0.3"/>
+  <path d="M30,480 Q200,484 400,480 Q600,476 770,480" fill="none" stroke="#2BA4B4" stroke-width="1.5" opacity="0.3"/>
+</svg>

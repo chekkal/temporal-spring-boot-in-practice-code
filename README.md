@@ -1,30 +1,76 @@
-# Companion code — *Temporal with Spring Boot in Practice*
+# Temporal + Spring Boot — Examples and Katas
 
-This directory holds runnable code that accompanies the book. The book itself is at `../BOOK_TEMPORAL_SPRING_BOOT_AMAZON.md`.
+Runnable [Temporal](https://temporal.io) examples for Java teams: a reference order-fulfillment service, plus **six graded katas** covering sagas, compensation, human-in-the-loop approval, scheduled-job migration, retry semantics, and workflow versioning.
+
+**Java 21 · Spring Boot 3.4 · Temporal Java SDK 1.34 · Maven · MIT licensed**
+
+Everything here boots with one `docker compose up` and is verified end-to-end by [`test-all.sh`](#verify-everything-works--test-allsh) — clone it, run the script, and you have a working Temporal stack with a real saga executing against it in about three minutes.
+
+![Reference application architecture](docs/images/reference-app-architecture.png)
+
+## Why this exists
+
+Temporal's Java material is thin next to Go and TypeScript, and Spring Boot is where most enterprise teams meet Temporal for the first time. The gap isn't concepts — it's the wiring: how `TemporalConfig` fits into a Spring context, where worker registration belongs, how to test a workflow without a live server, and what compensation actually looks like when the activities have side effects.
+
+This repo is what I wanted when I started.
+
+## The katas
+
+Each kata is a complete, runnable Spring Boot application. The scaffolding is done — workflow and activity interfaces, activity implementations with deliberate failure triggers, `TemporalConfig`, and a REST controller. **The workflow body is stubbed as a `TODO`.** That's your part, and it's 5–15 lines of business logic each.
+
+| # | Kata | Difficulty | What it teaches |
+|---|------|-----------|-----------------|
+| 01 | `kata-01-lost-order` | ★★☆☆☆ | Basic saga with manual compensation |
+| 02 | `kata-02-compensation-dance` | ★★★☆☆ | 5-step saga with reverse-order rollback |
+| 03 | `kata-03-approval-bottleneck` | ★★★☆☆ | `Workflow.await` + escalation timers |
+| 04 | `kata-04-midnight-migration` | ★★★★☆ | Cron schedules + Continue-As-New |
+| 05 | `kata-05-cascading-failure` | ★★★★☆ | Retry policy + fallback to a secondary provider |
+| 06 | `kata-06-schema-evolution` | ★★★★★ | `Workflow.getVersion` + forward-compatible DTOs |
+
+Each kata's own `README.md` carries the challenge text and a solution outline at the bottom for when you're stuck.
+
+![Saga orchestration and compensation](docs/images/saga-orchestration-pattern.png)
 
 ## What's here
 
 ```
-code/
-├── order-platform/        ← Reference application (Chapters 13–18, 25–27)
-│   ├── order-api/          # workflow + activity contracts, DTOs
-│   ├── order-service/      # Spring Boot app — impls, REST, TemporalConfig, tests
-│   └── docker/             # Postgres + Temporal server + UI
+.
+├── order-platform/         ← Reference application
+│   ├── order-api/           # workflow + activity contracts, DTOs
+│   ├── order-service/       # Spring Boot app — impls, REST, TemporalConfig, tests
+│   └── docker/              # Postgres + Temporal server + UI
 │
-└── katas/                 ← 6 exercises (Part 6 of the book)
-    ├── kata-01-lost-order/             Difficulty 2/5 — basic saga + manual compensation
-    ├── kata-02-compensation-dance/     Difficulty 3/5 — 5-step saga with reverse-order rollback
-    ├── kata-03-approval-bottleneck/    Difficulty 3/5 — Workflow.await + escalation
-    ├── kata-04-midnight-migration/     Difficulty 4/5 — cron + Continue-As-New
-    ├── kata-05-cascading-failure/      Difficulty 4/5 — retry + fallback to secondary provider
-    └── kata-06-schema-evolution/       Difficulty 5/5 — Workflow.getVersion + forward-compatible DTOs
+└── katas/                  ← 6 exercises, graded by difficulty
+    ├── kata-01-lost-order/
+    ├── kata-02-compensation-dance/
+    ├── kata-03-approval-bottleneck/
+    ├── kata-04-midnight-migration/
+    ├── kata-05-cascading-failure/
+    └── kata-06-schema-evolution/
 ```
 
-## Stack
+## Quick start
+
+```bash
+# 1. Start Temporal once (covers both the reference app and the katas)
+cd order-platform/docker && docker compose up -d
+# Temporal UI: http://localhost:8233
+
+# 2. Run the reference app
+cd ../  # back into order-platform/
+mvn install
+cd order-service && mvn spring-boot:run
+# REST: http://localhost:8080
+
+# 3. (Or) Run any kata
+cd ../../katas && mvn install
+cd kata-01-lost-order && mvn spring-boot:run
+# Each kata exposes a different port: 8081 (kata-01) ... 8086 (kata-06)
+```
+
+## Prerequisites
 
 - Java 21 LTS
-- Spring Boot 3.4
-- Temporal Java SDK 1.34
 - Maven 3.9+
 - A container runtime exposing the `docker` CLI + Compose v2 (see below)
 
@@ -51,28 +97,9 @@ docker info >/dev/null && echo "OK"
 docker compose version
 ```
 
-## Quick start
-
-```bash
-# 1. Start Temporal once (covers both the reference app and the katas)
-cd order-platform/docker && docker compose up -d
-# Temporal UI: http://localhost:8233
-
-# 2. Run the reference app
-cd ../  # back into order-platform/
-mvn install
-cd order-service && mvn spring-boot:run
-# REST: http://localhost:8080
-
-# 3. (Or) Run any kata
-cd ../../katas && mvn install
-cd kata-01-lost-order && mvn spring-boot:run
-# Each kata exposes a different port: 8081 (kata-01) ... 8086 (kata-06)
-```
-
 ## Verify everything works — `test-all.sh`
 
-A single script verifies that every piece of the companion code compiles, boots, and talks to Temporal correctly. Run it after cloning, after pulling updates, or after making changes:
+A single script verifies that every piece of this repo compiles, boots, and talks to Temporal correctly. Run it after cloning, after pulling updates, or after making changes:
 
 ```bash
 ./test-all.sh
@@ -84,12 +111,12 @@ Expected runtime: **~3–4 minutes on first run** (Maven downloads + Docker pull
 
 | # | Phase | What's verified | On pass, you know... |
 |---|---|---|---|
-| 1 | Prereqs | `java 21+`, `mvn`, `docker`, `curl`, `nc` are on `PATH` and the container runtime is reachable (Docker Desktop, Colima, OrbStack, Podman, etc. — see the *Container runtime* section above) | Your environment can build and run the stack |
+| 1 | Prereqs | `java 21+`, `mvn`, `docker`, `curl`, `nc` are on `PATH` and the container runtime is reachable | Your environment can build and run the stack |
 | 2 | Docker infra | `docker compose up -d` from `order-platform/docker/`; waits for ports `7233` (gRPC) and `8233` (UI) | Temporal Postgres + server + UI are live |
 | 3 | Ref-app build | `mvn install` in `order-platform/` — compiles `order-api` + `order-service`, runs unit tests | All code compiles; **`OrderFulfillmentWorkflowTest` passes against `TestWorkflowExtension`** (no live server needed for that step) |
 | 4 | Ref-app boot | `java -jar order-service.jar`; polls `/actuator/health` until `"status":"UP"` | Spring context, `TemporalConfig`, and worker registration all clean |
 | 5 | Happy path | POSTs an order with `paymentMethod=card-good`, polls `/api/orders/{id}/status` until `COMPLETED` | The full saga (validate → authorize → reserve → ship → notify) runs end-to-end against a real Temporal server |
-| 6 | Decline path | POSTs an order with `paymentMethod=card-decline-test`, polls until `FAILED` | The error path returns the workflow to `FAILED` as designed (compensation logic is exercised in code paths that have side effects further down the saga; this case fails on `authorize` before any compensation is registered) |
+| 6 | Decline path | POSTs an order with `paymentMethod=card-decline-test`, polls until `FAILED` | The error path returns the workflow to `FAILED` as designed (this case fails on `authorize` before any compensation is registered) |
 | 7 | Katas build | `mvn install` in `katas/` — builds all 6 modules | Every kata's starter scaffolding compiles |
 | 8 | Katas bootup | For each kata in turn: `java -jar`, wait for port to bind, kill | Each kata's Spring context starts, its `TemporalConfig` wires, and its worker registers with Temporal. Workflow bodies are deliberately `TODO`, so business endpoints are NOT exercised here |
 
@@ -125,7 +152,7 @@ When something fails, the script tails ~30–50 lines of the offending log to yo
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `Temporal gRPC not ready on :7233 after 120s` | Port already in use, container runtime not started, or runtime out of memory | `lsof -i:7233`; `docker compose down`; ensure your runtime is started (`colima start`, `podman machine start`, or launch Docker/Rancher/OrbStack); increase the runtime's memory to ≥ 4 GB (`colima start --memory 6`, or Docker Desktop → Settings → Resources) |
+| `Temporal gRPC not ready on :7233 after 120s` | Port already in use, container runtime not started, or runtime out of memory | `lsof -i:7233`; `docker compose down`; ensure your runtime is started (`colima start`, `podman machine start`, or launch Docker/Rancher/OrbStack); increase the runtime's memory to ≥ 4 GB |
 | `Java 21+ required (detected: 17)` | Wrong JDK on `PATH` | `sdk use java 21.0.4-tem` (or whichever 21+ distro you have) |
 | `order-service crashed during startup` | Usually a port conflict on 8080 | `lsof -i:8080`; kill the offender, re-run |
 | `katas/kata-NN-... didn't bind :808N within 90s` | Worker can't reach Temporal (DNS/network) or the kata's `application.yml` has a bad `spring.temporal.connection.target` | Check `.test-logs/kata-NN-….log` for the connection error |
@@ -135,36 +162,37 @@ When something fails, the script tails ~30–50 lines of the offending log to yo
 
 - The script uses **executable jars** (`java -jar target/*-SNAPSHOT.jar`), not `mvn spring-boot:run`, so each app is a single JVM with one PID — no orphan processes from Maven's fork chain.
 - A `trap EXIT` handler kills every background JVM the script started, even on Ctrl-C or unexpected exit. Your machine won't accumulate stale processes between runs.
-- The infra step is **idempotent**: re-running with the stack already up is a no-op (docker compose just confirms the services are healthy).
-- The script does **not** assert workflow correctness inside the katas — their bodies are intentionally `TODO`. The kata phase confirms the surrounding scaffolding is wired correctly; once you implement a kata, you can run its specific endpoint manually (see the kata's own `README.md`).
+- The infra step is **idempotent**: re-running with the stack already up is a no-op.
+- The script does **not** assert workflow correctness inside the katas — their bodies are intentionally `TODO`. The kata phase confirms the surrounding scaffolding is wired correctly; once you implement a kata, run its specific endpoint manually (see the kata's own `README.md`).
 
-## Reading order
+## Where to look for a given pattern
 
-| If you're working through... | Open this code |
+| If you want to see... | Open this |
 |---|---|
-| Chapter 13 (Order Fulfillment Saga) | `order-platform/order-service/.../workflow/OrderFulfillmentWorkflowImpl.java` |
-| Chapter 14 (Payment + Compensation) | `order-platform/order-service/.../activity/PaymentActivityImpl.java` |
-| Chapter 15 (Human-in-the-Loop) | `order-platform/order-service/.../workflow/OrderApprovalWorkflowImpl.java` |
-| Chapter 17 (Signals / Queries / Updates) | The `cancel` signal + `getStatus` query on `OrderFulfillmentWorkflow` |
-| Chapter 21 (Testing) | `order-platform/order-service/src/test/.../OrderFulfillmentWorkflowTest.java` |
-| Chapter 25 (Reference App Walkthrough) | The whole of `order-platform/` |
-| Chapter 26 (Retry & Timeouts) | `ActivityOptions` in `OrderFulfillmentWorkflowImpl` + `kata-05` |
-| Chapter 27 (Idempotency & Business Keys) | `setWorkflowIdReusePolicy` in `OrderController` |
-| Chapter 28 (Migrating Scheduled Jobs) | `kata-04-midnight-migration/` |
-| Chapter 32 (Versioning) | `kata-06-schema-evolution/` |
-| Part 6 (Katas) | `katas/kata-NN-*/` — one per challenge |
-
-## How the katas work
-
-Each kata is a complete, runnable Spring Boot app with:
-
-- Workflow + activity interfaces (provided)
-- Activity implementations with deliberate failure triggers (provided)
-- `TemporalConfig` and a REST controller (provided)
-- **A workflow implementation with the body deliberately stubbed out as a `TODO`** — *that's your part*
-
-The challenge text from the book is mirrored in each kata's `README.md`, with a solution outline at the bottom for when you're stuck. Open the `*WorkflowImpl.java` file and follow the TODO block — they're 5-15 lines of business logic each.
+| Order fulfillment saga | `order-platform/order-service/.../workflow/OrderFulfillmentWorkflowImpl.java` |
+| Payment + compensation | `order-platform/order-service/.../activity/PaymentActivityImpl.java` |
+| Human-in-the-loop approval | `order-platform/order-service/.../workflow/OrderApprovalWorkflowImpl.java` |
+| Signals / queries / updates | The `cancel` signal + `getStatus` query on `OrderFulfillmentWorkflow` |
+| Testing without a live server | `order-platform/order-service/src/test/.../OrderFulfillmentWorkflowTest.java` |
+| Retry policy + timeouts | `ActivityOptions` in `OrderFulfillmentWorkflowImpl`, and `kata-05` |
+| Idempotency + business keys | `setWorkflowIdReusePolicy` in `OrderController` |
+| Migrating scheduled jobs | `kata-04-midnight-migration/` |
+| Workflow versioning | `kata-06-schema-evolution/` |
 
 ## A note on the package namespace
 
-All companion code uses `com.example.*` — the same neutral namespace the book uses. No third-party branding or organization prefixes.
+All code uses `com.example.*` — a neutral namespace with no third-party branding or organization prefixes, so it's safe to copy into your own project and rename.
+
+## Contributing
+
+Issues and pull requests are welcome — particularly kata solutions that take a different approach, additional failure scenarios, and corrections. If something here teaches Temporal badly, please open an issue; I'd rather fix it than leave it.
+
+## The book
+
+This code started life as the companion repository for *Temporal with Spring Boot in Practice*, a self-published book of mine. **The code stands entirely on its own** — the katas, the reference app, and the READMEs are complete without it. The book adds the narrative explanation of the patterns, and each kata's `README.md` maps back to its chapter if you happen to have it.
+
+## License
+
+MIT — see [LICENSE](LICENSE). Use it, copy it into proprietary projects, teach from it.
+
+Temporal and the Temporal logo are trademarks of Temporal Technologies Inc. This is an independent, unaffiliated project.
