@@ -8,8 +8,10 @@
 #   4. Build + unit-test the order-platform reference app.
 #   5. Boot order-service, exercise happy-path + payment-decline paths via REST, kill.
 #   6. Build + run the agentic-coordination use case end-to-end.
-#   7. Build all 6 katas.
-#   8. Boot each kata in turn, verify it binds its port (= Spring context + Temporal
+#   7. Build + unit-test the Udemy course modules (course/), then boot the kata-26
+#      solution and drive one order through it against the live server.
+#   8. Build all 6 katas.
+#   9. Boot each kata in turn, verify it binds its port (= Spring context + Temporal
 #      worker came up cleanly), kill. Workflow bodies are TODOs so we don't exercise
 #      business endpoints.
 #
@@ -104,6 +106,7 @@ check_port_free() {
 
 check_port_free 8080 "order-service"
 check_port_free 8090 "use-cases/agentic-coordination"
+check_port_free 8097 "course/kata-26-lost-order"
 if [[ "$SKIP_KATAS" == false ]]; then
   for p in 8081 8082 8083 8084 8085 8086; do
     check_port_free "$p" "the kata on :$p"
@@ -296,6 +299,63 @@ wait "$AGENT_PID" 2>/dev/null || true
 APP_PIDS=("${APP_PIDS[@]/$AGENT_PID}")
 
 # -----------------------------------------------------------------------------
+header "Udemy course modules"
+# -----------------------------------------------------------------------------
+# Every module here has a real workflow body (kata starters excepted: their tests are
+# skipped by design), so the unit tests exercise the solutions.
+
+( cd "$SCRIPT_DIR/course" && mvn -q -B install ) \
+  || xfail "course modules build failed"
+ok "mvn install — course/ (lectures 14, 15, 17 and kata solutions 26-28, tests passed)"
+
+COURSE_JAR="$SCRIPT_DIR/course/kata-26-lost-order/solution/target/course-kata-26-solution-1.0.0-SNAPSHOT.jar"
+[[ -f "$COURSE_JAR" ]] || xfail "course kata-26: jar not built at $COURSE_JAR"
+
+java -jar "$COURSE_JAR" \
+    --spring.main.banner-mode=off \
+    --logging.level.root=WARN \
+  > "$LOG_DIR/course-kata-26.log" 2>&1 &
+COURSE_PID=$!
+APP_PIDS+=("$COURSE_PID")
+
+elapsed=0
+while ! nc -z localhost 8097 2>/dev/null; do
+  sleep 2; elapsed=$((elapsed + 2))
+  if ! kill -0 "$COURSE_PID" 2>/dev/null; then
+    tail -30 "$LOG_DIR/course-kata-26.log"
+    xfail "course kata-26 crashed during startup (see log)"
+  fi
+  if [[ $elapsed -ge 90 ]]; then
+    tail -30 "$LOG_DIR/course-kata-26.log"
+    xfail "course kata-26 didn't bind :8097 within 90s"
+  fi
+done
+ok "course kata-26 solution boots on :8097"
+
+COURSE_ORDER="verify-$$"
+curl -sf -X POST localhost:8097/api/orders \
+    -H 'Content-Type: application/json' \
+    -d "{\"orderId\":\"$COURSE_ORDER\",\"customerEmail\":\"a@b.c\",\"amount\":99.00,\"paymentMethod\":\"visa\",\"items\":[\"sku-a\"]}" \
+    >/dev/null \
+  || xfail "course kata-26: could not start an order"
+
+elapsed=0
+course_status=""
+while [[ "$course_status" != "\"COMPLETED\"" ]]; do
+  sleep 2; elapsed=$((elapsed + 2))
+  course_status=$(curl -sf "localhost:8097/api/orders/order-$COURSE_ORDER/status" || true)
+  if [[ $elapsed -ge 60 ]]; then
+    tail -30 "$LOG_DIR/course-kata-26.log"
+    xfail "course kata-26 order did not complete within 60s (last status: ${course_status:-unknown})"
+  fi
+done
+ok "course kata-26 order completed end-to-end — charge, reserve, ship"
+
+kill "$COURSE_PID" 2>/dev/null || true
+wait "$COURSE_PID" 2>/dev/null || true
+APP_PIDS=("${APP_PIDS[@]/$COURSE_PID}")
+
+# -----------------------------------------------------------------------------
 if [[ "$SKIP_KATAS" == true ]]; then
   header "All checks passed (katas skipped)"
   info "Temporal UI: http://localhost:8233   |   Logs: $LOG_DIR"
@@ -361,6 +421,7 @@ info "Summary:"
 info "  - Temporal infra started"
 info "  - order-platform: build OK, unit tests OK, happy + decline workflows OK"
 info "  - use-cases/agentic-coordination: build, 5 tests, full agent run OK"
+info "  - course/: build, unit tests, kata-26 solution order OK"
 info "  - katas: all 6 build, boot, and register their worker with Temporal"
 echo
 info "Temporal UI is at http://localhost:8233"

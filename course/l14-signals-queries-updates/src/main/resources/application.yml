@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: course-l14-signals-queries-updates
+  temporal:
+    connection:
+      target: 127.0.0.1:7233
+    namespace: default
+server:
+  port: 8091

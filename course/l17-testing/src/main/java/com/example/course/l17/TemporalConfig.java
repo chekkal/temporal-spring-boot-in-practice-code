@@ -1,0 +1,59 @@
+package com.example.course.l17;
+
+import io.temporal.client.WorkflowClient;
+import io.temporal.client.WorkflowClientOptions;
+import io.temporal.serviceclient.WorkflowServiceStubs;
+import io.temporal.serviceclient.WorkflowServiceStubsOptions;
+import io.temporal.worker.Worker;
+import io.temporal.worker.WorkerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+
+/**
+ * Connects to a real Temporal server. Disabled under the "test" profile: the Spring Boot test
+ * (OrderWorkflowIntegrationTest) supplies a WorkflowClient and Worker from TestWorkflowEnvironment instead.
+ */
+@Configuration
+@Profile("!test")
+public class TemporalConfig {
+
+    public static final String TASK_QUEUE = "course-l17";
+
+    @Bean
+    public WorkflowServiceStubs serviceStubs(
+            @Value("${spring.temporal.connection.target:127.0.0.1:7233}") String target) {
+        return WorkflowServiceStubs.newServiceStubs(
+                WorkflowServiceStubsOptions.newBuilder().setTarget(target).build());
+    }
+
+    @Bean
+    public WorkflowClient workflowClient(WorkflowServiceStubs stubs,
+                                         @Value("${spring.temporal.namespace:default}") String namespace) {
+        return WorkflowClient.newInstance(stubs,
+                WorkflowClientOptions.newBuilder().setNamespace(namespace).build());
+    }
+
+    @Bean
+    public WorkerFactory workerFactory(WorkflowClient client) {
+        return WorkerFactory.newInstance(client);
+    }
+
+    @Bean
+    public Worker orderWorker(WorkerFactory workerFactory,
+                              PaymentActivity paymentActivity,
+                              InventoryActivity inventoryActivity,
+                              ShippingActivity shippingActivity) {
+        Worker worker = workerFactory.newWorker(TASK_QUEUE);
+        worker.registerWorkflowImplementationTypes(OrderWorkflowImpl.class, ApprovalWorkflowImpl.class);
+        worker.registerActivitiesImplementations(paymentActivity, inventoryActivity, shippingActivity);
+        return worker;
+    }
+
+    @Bean
+    public ApplicationRunner startWorkerFactory(WorkerFactory workerFactory, Worker orderWorker) {
+        return args -> workerFactory.start();
+    }
+}

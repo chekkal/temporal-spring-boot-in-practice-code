@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: order-service
+  temporal:
+    connection:
+      target: 127.0.0.1:7233
+    namespace: default
+server:
+  port: 8092

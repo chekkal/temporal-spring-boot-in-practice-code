@@ -7,8 +7,44 @@ Runnable [Temporal](https://temporal.io) examples for Java teams: a reference or
 Everything here boots with one `docker compose up` and is verified end-to-end by [`test-all.sh`](#verify-everything-works--test-allsh) — clone it, run the script, and you have a working Temporal stack with a real saga executing against it in about three minutes.
 
 > **Evaluating Temporal?** Start with **[Use Cases](use-cases/)** — which pattern solves which production problem, and whether you need a workflow engine at all.
+>
+> **Taking the Udemy course?** Jump to **[Following the Udemy course](#following-the-udemy-course)** — the code for each lecture.
 
 ![Reference application architecture](docs/images/reference-app-architecture.png)
+
+## Following the Udemy course
+
+This is the companion code for the Udemy course *Temporal with Spring Boot in Practice*. Start Temporal once (`cd order-platform/docker && docker compose up -d`), then open the code for the lecture you are watching. Modules under [`course/`](course/) use the exact names shown on the slides; see [`course/README.md`](course/README.md).
+
+| Lecture | Code |
+|---|---|
+| 01–04 — The case for durable execution | Concepts only. Code starts at lecture 5. |
+| 05 — Architectural overview | [`order-platform/`](order-platform/): [`TemporalConfig`](order-platform/order-service/src/main/java/com/example/order/config/TemporalConfig.java) (client + worker) and [`OrderController`](order-platform/order-service/src/main/java/com/example/order/controller/OrderController.java) (starts workflows) in one Spring Boot app |
+| 06 — Workflows and activities | [`OrderFulfillmentWorkflow`](order-platform/order-api/src/main/java/com/example/order/api/workflow/OrderFulfillmentWorkflow.java), [`OrderFulfillmentWorkflowImpl`](order-platform/order-service/src/main/java/com/example/order/workflow/OrderFulfillmentWorkflowImpl.java), [`PaymentActivityImpl`](order-platform/order-service/src/main/java/com/example/order/activity/PaymentActivityImpl.java) |
+| 07 — Workers and task queues | [`TemporalConfig`](order-platform/order-service/src/main/java/com/example/order/config/TemporalConfig.java); per-service task queues in [`course/l15-multi-service`](course/l15-multi-service/) |
+| 08 — Server, persistence, history | [`order-platform/docker`](order-platform/docker/docker-compose.yml) (Postgres-backed server); Continue-As-New in [`kata-04`](katas/kata-04-midnight-migration/) |
+| 09 — Spring Boot configuration | [`TemporalConfig`](order-platform/order-service/src/main/java/com/example/order/config/TemporalConfig.java) — the manual `@Bean` wiring from slide 4. The starter's `application.yml` worker configuration (slide 3) is not used in this repo. |
+| 10 — Order fulfillment saga | [`OrderFulfillmentWorkflowImpl`](order-platform/order-service/src/main/java/com/example/order/workflow/OrderFulfillmentWorkflowImpl.java) (uses Temporal's `Saga` helper). The compensation list from the slides is in the [kata 26](course/kata-26-lost-order/) and [kata 27](course/kata-27-compensation-dance/) solutions. |
+| 11 — Payment and compensation | [`PaymentActivityImpl`](order-platform/order-service/src/main/java/com/example/order/activity/PaymentActivityImpl.java) — authorize, capture, void, refund |
+| 12 — Human-in-the-loop approvals | [`OrderApprovalWorkflowImpl`](order-platform/order-service/src/main/java/com/example/order/workflow/OrderApprovalWorkflowImpl.java), [`ApprovalController`](order-platform/order-service/src/main/java/com/example/order/controller/ApprovalController.java) |
+| 13 — Scheduled jobs and cron workflows | Exercise: [`kata-04-midnight-migration`](katas/kata-04-midnight-migration/) |
+| 14 — Signals, queries, updates | [`course/l14-signals-queries-updates`](course/l14-signals-queries-updates/) |
+| 15 — Multi-service coordination | [`course/l15-multi-service`](course/l15-multi-service/) |
+| 16 — Local, Docker, Kubernetes | [`order-platform/docker`](order-platform/docker/docker-compose.yml). No Kubernetes manifests yet. |
+| 17 — Testing workflows | [`course/l17-testing`](course/l17-testing/) — one test class per slide |
+| 18 — Observability | Actuator is included in [`order-service`](order-platform/order-service/). Temporal metrics, the Prometheus registry and tracing are not wired yet. |
+| 19 — Versioning | Exercise: [`kata-06-schema-evolution`](katas/kata-06-schema-evolution/); replay test in [`course/l17-testing`](course/l17-testing/src/test/java/com/example/course/l17/OrderWorkflowReplayTest.java) |
+| 20 — Security, mTLS | Not covered yet. |
+| 21 — End-to-end reference app | [`order-platform/`](order-platform/) — `order-api` + `order-service` |
+| 22 — Retries, timeouts, failures | `ActivityOptions` in [`OrderFulfillmentWorkflowImpl`](order-platform/order-service/src/main/java/com/example/order/workflow/OrderFulfillmentWorkflowImpl.java); exercise: [`kata-05-cascading-failure`](katas/kata-05-cascading-failure/) |
+| 23 — Idempotency and business keys | `REJECT_DUPLICATE` in [`OrderController`](order-platform/order-service/src/main/java/com/example/order/controller/OrderController.java); repository check in the [kata 26 solution](course/kata-26-lost-order/solution/)'s `PaymentActivityImpl` |
+| 24 — Migrating scheduled jobs | Exercise: [`kata-04-midnight-migration`](katas/kata-04-midnight-migration/) |
+| 25 — Temporal Cloud and AI agents | AI agents: [`use-cases/agentic-coordination`](use-cases/agentic-coordination/). Temporal Cloud configuration is not covered yet. |
+| 26 — Kata: The Lost Order | [`course/kata-26-lost-order`](course/kata-26-lost-order/) — starter + solution |
+| 27 — Kata: The Compensation Dance | [`course/kata-27-compensation-dance`](course/kata-27-compensation-dance/) — starter + solution |
+| 28 — Kata: The Approval Bottleneck | [`course/kata-28-approval-bottleneck`](course/kata-28-approval-bottleneck/) — starter + solution |
+
+The six katas under [`katas/`](katas/) follow the book. Katas 01–03 cover the same scenarios as lectures 26–28 with different code; katas 04–06 are extra practice.
 
 ## Why this exists
 
@@ -43,6 +79,8 @@ Each kata's own `README.md` carries the challenge text and a solution outline at
 │   ├── order-api/           # workflow + activity contracts, DTOs
 │   ├── order-service/       # Spring Boot app — impls, REST, TemporalConfig, tests
 │   └── docker/              # Postgres + Temporal server + UI
+│
+├── course/                 ← Udemy course: lectures 14, 15, 17 and katas 26-28
 │
 └── katas/                  ← 6 exercises, graded by difficulty
     ├── kata-01-lost-order/

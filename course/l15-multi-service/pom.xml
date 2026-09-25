@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.example.course</groupId>
+        <artifactId>course-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>course-l15-multi-service</artifactId>
+    <packaging>pom</packaging>
+    <name>Lecture 15 — Multi-Service Coordination Across Bounded Contexts</name>
+    <description>Slide 5 layout: a shared order-api contract and four Spring Boot apps, one per bounded context, each polling its own task queue.</description>
+
+    <modules>
+        <module>order-api</module>
+        <module>order-service</module>
+        <module>payment-service</module>
+        <module>inventory-service</module>
+        <module>shipping-service</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.example.course</groupId>
+                <artifactId>course-l15-order-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>
