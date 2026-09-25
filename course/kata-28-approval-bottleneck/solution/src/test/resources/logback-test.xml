@@ -1,0 +1,9 @@
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+    <!-- The tests trigger activity failures on purpose; skip the per-attempt stack traces. -->
+    <logger name="io.temporal.internal.activity" level="ERROR"/>
+</configuration>
